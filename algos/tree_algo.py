@@ -38,7 +38,7 @@ def _point_query(node, lo, hi, p):
     return node.value + _point_query(node.right, mid, hi, p)
 
 
-def prepare(rectangles):
+def prepare(rectangles: list) -> tuple:
     xs = sorted({r[0] for r in rectangles} | {r[2] for r in rectangles})
     ys = sorted({r[1] for r in rectangles} | {r[3] for r in rectangles})
     y_index = {v: i for i, v in enumerate(ys)}
@@ -59,7 +59,7 @@ def prepare(rectangles):
     return xs, ys, ny, roots
 
 
-def query(prepared, x, y):
+def query(prepared: tuple, x: int, y: int) -> int:
     xs, ys, ny, roots = prepared
     i = bisect_right(xs, x) - 1
     if i < 0:

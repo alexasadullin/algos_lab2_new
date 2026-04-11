@@ -1,7 +1,7 @@
 from bisect import bisect_right
 
 
-def prepare(rectangles):
+def prepare(rectangles: list) -> tuple:
     xs = sorted({r[0] for r in rectangles} | {r[2] for r in rectangles})
     ys = sorted({r[1] for r in rectangles} | {r[3] for r in rectangles})
     nx = len(xs) - 1
@@ -21,7 +21,7 @@ def prepare(rectangles):
     return xs, ys, grid
 
 
-def query(prepared, x, y):
+def query(prepared: tuple, x: int, y: int) -> int:
     xs, ys, grid = prepared
     i = bisect_right(xs, x) - 1
     j = bisect_right(ys, y) - 1
