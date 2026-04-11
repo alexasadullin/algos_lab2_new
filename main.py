@@ -95,9 +95,9 @@ def build_brute_scenarios() -> list:
     N2, M2 = 3000, 3000
     N3 = 3000
     return [
-        ("nested, all-hit, many queries", gen_nested(N1), [(10 * N1, 10 * N1)] * M1),
-        ("large N x M, all miss", gen_random(N2, seed=77), [(10 ** 9 + 13, 10 ** 9 + 17)] * M2),
-        ("large N nested, single hit", gen_nested(N3), [(10 * N3, 10 * N3)]),
+        ("1. N=2000 nested, M=2000 at center", gen_nested(N1), [(10 * N1, 10 * N1)] * M1),
+        ("2. N=3000 random, M=3000 miss all", gen_random(N2, seed=77), [(10 ** 9 + 13, 10 ** 9 + 17)] * M2),
+        ("3. N=3000 nested, M=1 at center", gen_nested(N3), [(10 * N3, 10 * N3)]),
     ]
 
 
@@ -106,9 +106,9 @@ def build_map_scenarios() -> list:
     N2 = 200
     N3, M3 = 150, 1000
     return [
-        ("nested N=200, max grid fill", gen_nested(N1), [(10 * N1, 10 * N1)]),
-        ("distinct random coords N=200", gen_distinct_coords(N2, seed=23), [(500_000, 500_000)]),
-        ("nested N=150, many queries", gen_nested(N3), gen_points_hash(N3, M3)),
+        ("1. N=200 nested", gen_nested(N1), [(10 * N1, 10 * N1)]),
+        ("2. N=200 distinct non-nested coords", gen_distinct_coords(N2, seed=23), [(500_000, 500_000)]),
+        ("3. N=150 nested, M=1000 hash queries", gen_nested(N3), gen_points_hash(N3, M3)),
     ]
 
 
@@ -116,9 +116,9 @@ def build_tree_scenarios() -> list:
     N, M = 2000, 2000
     s2_points = [(500_000_000, (i * 998244353) % 1_000_000) for i in range(M)]
     return [
-        ("distinct coords, max versions", gen_distinct_coords(N, seed=31), gen_points_hash(N, M)),
-        ("same x-range, heavy queries", gen_same_x_range(N, seed=41), s2_points),
-        ("nested N=2000, many queries", gen_nested(N), gen_points_hash(N, M)),
+        ("1. N=2000 distinct coords, M=2000 hash queries", gen_distinct_coords(N, seed=31), gen_points_hash(N, M)),
+        ("2. N=2000 same x-interval, M=2000 queries", gen_same_x_range(N, seed=41), s2_points),
+        ("3. N=2000 nested, M=2000 hash queries", gen_nested(N), gen_points_hash(N, M)),
     ]
 
 
