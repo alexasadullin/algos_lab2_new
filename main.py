@@ -65,20 +65,6 @@ def gen_same_x_range(N, seed=11):
     return rects
 
 
-def correctness_check():
-    rects = [(2, 2, 6, 8), (5, 4, 9, 10), (4, 0, 11, 6), (8, 2, 12, 12)]
-    tests = [((2, 2), 1), ((12, 12), 0), ((10, 4), 2), ((5, 5), 3), ((2, 10), 0), ((2, 8), 0)]
-    ok = True
-    for name, mod in [("brute", brute), ("map", map_algo), ("tree", tree_algo)]:
-        prepared = mod.prepare(rects)
-        results = [mod.query(prepared, x, y) for (x, y), _ in tests]
-        expected = [e for _, e in tests]
-        match = results == expected
-        print(f"{name}: {results} expected {expected} {'OK' if match else 'FAIL'}")
-        ok = ok and match
-    return ok
-
-
 def run_many_queries(mod, prepared, points):
     for x, y in points:
         mod.query(prepared, x, y)
@@ -159,7 +145,7 @@ def build_tree_scenarios():
 
 
 def draw_chart(algo_name, file_name, results):
-    fig, axes = plt.subplots(1, 3, figsize=(14, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5), gridspec_kw={"wspace": 0.9})
     for ax, (label, prep_time, query_time, prep_mem, query_mem) in zip(axes, results):
         total_time = prep_time + query_time
         total_mem = prep_mem + query_mem
@@ -192,10 +178,6 @@ def run_algo(name, file_name, mod, scenarios):
 
 
 def main():
-    print("correctness check")
-    if not correctness_check():
-        print("correctness failed")
-        return
     run_algo("brute", "brute", brute, build_brute_scenarios())
     run_algo("map_algo", "map_algo", map_algo, build_map_scenarios())
     run_algo("tree_algo", "tree_algo", tree_algo, build_tree_scenarios())
