@@ -3,17 +3,19 @@ import time
 import tracemalloc
 import matplotlib.pyplot as plt
 
-from algos import brute, map_algo, tree_algo
+from algos.brute import query as brute_query
+from algos.map_algo import prepare as map_prepare, query as map_query
+from algos.tree_algo import prepare as tree_prepare, query as tree_query
 
 
-def measure_time(fn, *args):
+def measure_time(fn, *args) -> float:
     start = time.perf_counter()
     for _ in range(100):
         fn(*args)
     return (time.perf_counter() - start) / 100
 
 
-def measure_memory(fn, *args):
+def measure_memory(fn, *args) -> int:
     tracemalloc.start()
     fn(*args)
     _, peak = tracemalloc.get_traced_memory()
@@ -21,16 +23,16 @@ def measure_memory(fn, *args):
     return peak
 
 
-def gen_nested(N):
+def gen_nested(N: int) -> list:
     return [(10 * i, 10 * i, 10 * (2 * N - i), 10 * (2 * N - i)) for i in range(1, N + 1)]
 
 
-def gen_points_hash(N, M):
+def gen_points_hash(N: int, M: int) -> list:
     p_x, p_y = 1000000007, 998244353
     return [((p_x * i) % (20 * N), (p_y * i) % (20 * N)) for i in range(1, M + 1)]
 
 
-def gen_random(N, seed=42):
+def gen_random(N: int, seed: int = 42) -> list:
     rng = random.Random(seed)
     rects = []
     for _ in range(N):
@@ -42,7 +44,7 @@ def gen_random(N, seed=42):
     return rects
 
 
-def gen_distinct_coords(N, seed=7):
+def gen_distinct_coords(N: int, seed: int = 7) -> list:
     rng = random.Random(seed)
     xs = rng.sample(range(1, 10 ** 6), 2 * N)
     ys = rng.sample(range(1, 10 ** 6), 2 * N)
@@ -54,7 +56,7 @@ def gen_distinct_coords(N, seed=7):
     return rects
 
 
-def gen_same_x_range(N, seed=11):
+def gen_same_x_range(N: int, seed: int = 11) -> list:
     rng = random.Random(seed)
     x1, x2 = 1, 10 ** 9
     rects = []
@@ -65,122 +67,94 @@ def gen_same_x_range(N, seed=11):
     return rects
 
 
-def run_many_queries(mod, prepared, points):
+def identity(rectangles: list) -> list:
+    return rectangles
+
+
+def run_many_queries(query_fn, prepared, points: list) -> None:
     for x, y in points:
-        mod.query(prepared, x, y)
+        query_fn(prepared, x, y)
 
 
-def collect_scenario(mod, rects, query_points):
-    prepared = mod.prepare(rects)
-    prep_time = measure_time(mod.prepare, rects)
-    if len(query_points) == 1:
-        qx, qy = query_points[0]
-        query_time = measure_time(mod.query, prepared, qx, qy)
-        query_mem = measure_memory(mod.query, prepared, qx, qy)
+def collect_scenario(prepare_fn, query_fn, rects: list, points: list) -> tuple:
+    prepared = prepare_fn(rects)
+    prep_time = measure_time(prepare_fn, rects)
+    prep_mem = measure_memory(prepare_fn, rects)
+    if len(points) == 1:
+        x, y = points[0]
+        query_time = measure_time(query_fn, prepared, x, y)
+        query_mem = measure_memory(query_fn, prepared, x, y)
     else:
-        query_time = measure_time(run_many_queries, mod, prepared, query_points)
-        query_mem = measure_memory(run_many_queries, mod, prepared, query_points)
-    prep_mem = measure_memory(mod.prepare, rects)
+        query_time = measure_time(run_many_queries, query_fn, prepared, points)
+        query_mem = measure_memory(run_many_queries, query_fn, prepared, points)
     return prep_time, query_time, prep_mem, query_mem
 
 
-def build_brute_scenarios():
+def build_brute_scenarios() -> list:
     N1, M1 = 2000, 2000
-    s1_rects = gen_nested(N1)
-    s1_points = [(10 * N1, 10 * N1) for _ in range(M1)]
-
     N2, M2 = 3000, 3000
-    s2_rects = gen_random(N2, seed=77)
-    s2_points = [(10 ** 9 + 13, 10 ** 9 + 17) for _ in range(M2)]
-
     N3 = 3000
-    s3_rects = gen_nested(N3)
-    s3_points = [(10 * N3, 10 * N3)]
-
     return [
-        ("nested, all-hit, many queries", s1_rects, s1_points),
-        ("large N x M, all miss", s2_rects, s2_points),
-        ("large N nested, single hit", s3_rects, s3_points),
+        ("nested, all-hit, many queries", gen_nested(N1), [(10 * N1, 10 * N1)] * M1),
+        ("large N x M, all miss", gen_random(N2, seed=77), [(10 ** 9 + 13, 10 ** 9 + 17)] * M2),
+        ("large N nested, single hit", gen_nested(N3), [(10 * N3, 10 * N3)]),
     ]
 
 
-def build_map_scenarios():
+def build_map_scenarios() -> list:
     N1 = 200
-    s1_rects = gen_nested(N1)
-    s1_points = [(10 * N1, 10 * N1)]
-
     N2 = 200
-    s2_rects = gen_distinct_coords(N2, seed=23)
-    s2_points = [(500_000, 500_000)]
-
     N3, M3 = 150, 1000
-    s3_rects = gen_nested(N3)
-    s3_points = gen_points_hash(N3, M3)
-
     return [
-        ("nested N=200, max grid fill", s1_rects, s1_points),
-        ("distinct random coords N=200", s2_rects, s2_points),
-        ("nested N=150, many queries", s3_rects, s3_points),
+        ("nested N=200, max grid fill", gen_nested(N1), [(10 * N1, 10 * N1)]),
+        ("distinct random coords N=200", gen_distinct_coords(N2, seed=23), [(500_000, 500_000)]),
+        ("nested N=150, many queries", gen_nested(N3), gen_points_hash(N3, M3)),
     ]
 
 
-def build_tree_scenarios():
-    N1, M1 = 2000, 2000
-    s1_rects = gen_distinct_coords(N1, seed=31)
-    s1_points = gen_points_hash(N1, M1)
-
-    N2, M2 = 2000, 2000
-    s2_rects = gen_same_x_range(N2, seed=41)
-    s2_points = [(500_000_000, (i * 998244353) % 1_000_000) for i in range(M2)]
-
-    N3, M3 = 2000, 2000
-    s3_rects = gen_nested(N3)
-    s3_points = gen_points_hash(N3, M3)
-
+def build_tree_scenarios() -> list:
+    N, M = 2000, 2000
+    s2_points = [(500_000_000, (i * 998244353) % 1_000_000) for i in range(M)]
     return [
-        ("distinct coords, max versions", s1_rects, s1_points),
-        ("same x-range, heavy queries", s2_rects, s2_points),
-        ("nested N=2000, many queries", s3_rects, s3_points),
+        ("distinct coords, max versions", gen_distinct_coords(N, seed=31), gen_points_hash(N, M)),
+        ("same x-range, heavy queries", gen_same_x_range(N, seed=41), s2_points),
+        ("nested N=2000, many queries", gen_nested(N), gen_points_hash(N, M)),
     ]
 
 
-def draw_chart(algo_name, file_name, results):
+def draw_chart(algo_name: str, results: list):
     fig, axes = plt.subplots(1, 3, figsize=(18, 5), gridspec_kw={"wspace": 0.9})
     for ax, (label, prep_time, query_time, prep_mem, query_mem) in zip(axes, results):
-        total_time = prep_time + query_time
-        total_mem = prep_mem + query_mem
         ax2 = ax.twinx()
-        x_time = 0
-        x_mem = 1
-        bar_time = ax.bar([x_time], [total_time], color="blue", width=0.6, label="time")
-        bar_mem = ax2.bar([x_mem], [total_mem], color="orange", width=0.6, label="memory")
+        bar_time = ax.bar([0], [prep_time + query_time], color="blue", width=0.6)
+        bar_mem = ax2.bar([1], [prep_mem + query_mem], color="orange", width=0.6)
         ax.set_yscale("log")
         ax2.set_yscale("log")
-        ax.set_xticks([x_time, x_mem])
+        ax.set_xticks([0, 1])
         ax.set_xticklabels(["time", "memory"])
         ax.set_ylabel("time (s)")
         ax2.set_ylabel("memory (bytes)")
         ax.set_title(label)
         ax.legend([bar_time, bar_mem], ["time", "memory"], loc="upper left")
     fig.suptitle(algo_name)
-    plt.savefig(f"charts/{file_name}.png", bbox_inches="tight")
+    plt.savefig(f"charts/{algo_name}.png", bbox_inches="tight")
     plt.close()
 
 
-def run_algo(name, file_name, mod, scenarios):
+def run_algo(name: str, prepare_fn, query_fn, scenarios: list):
     print(f"\n=== {name} ===")
     results = []
     for label, rects, points in scenarios:
-        pt, qt, pm, qm = collect_scenario(mod, rects, points)
+        pt, qt, pm, qm = collect_scenario(prepare_fn, query_fn, rects, points)
         print(f"{label}: prep_time={pt:.6f}s query_time={qt:.6f}s prep_mem={pm}B query_mem={qm}B")
         results.append((label, pt, qt, pm, qm))
-    draw_chart(name, file_name, results)
+    draw_chart(name, results)
 
 
 def main():
-    run_algo("brute", "brute", brute, build_brute_scenarios())
-    run_algo("map_algo", "map_algo", map_algo, build_map_scenarios())
-    run_algo("tree_algo", "tree_algo", tree_algo, build_tree_scenarios())
+    run_algo("brute", identity, brute_query, build_brute_scenarios())
+    run_algo("map_algo", map_prepare, map_query, build_map_scenarios())
+    run_algo("tree_algo", tree_prepare, tree_query, build_tree_scenarios())
 
 
 if __name__ == "__main__":
