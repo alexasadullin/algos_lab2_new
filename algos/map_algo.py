@@ -1,48 +1,50 @@
 from bisect import bisect_right
 
+def cmp(v: list) -> tuple:
+    s = sorted(set(v))
+    d = {}
+    for k in range(len(s)):
+        d[s[k]] = k
+    return s, d
 
-def prepare(rectangles):
-    x_values = []
-    y_values = []
-    for r in rectangles:
-        x_values.append(r[0])
-        x_values.append(r[2])
-        y_values.append(r[1])
-        y_values.append(r[3])
+def prepare(rect: list) -> tuple:
+    if len(rect) == 0:
+        return [], [], []
+    xv = []
+    yv = []
+    for r in rect:
+        xv.append(r[0]); xv.append(r[2])
+        yv.append(r[1]); yv.append(r[3])
+    # print(len(xv), len(yv))
+    sx, ix = cmp(xv)
+    sy, iy = cmp(yv)
+    nx = len(sx) - 1
+    ny = len(sy) - 1
+    if nx <= 0 or ny <= 0:
+        return sx, sy, []
+    g = []
+    for i in range(nx):
+        g.append([0] * ny)
+    # cnt = 0
+    for x1, y1, x2, y2 in rect:
+        a = ix[x1]; b = ix[x2]
+        c = iy[y1]; d = iy[y2]
+        for i in range(a, b):
+            for j in range(c, d):
+                g[i][j] += 1
+                # cnt += 1
+    # print(cnt)
+    return sx, sy, g
 
-    xs = sorted(list(set(x_values)))
-    ys = sorted(list(set(y_values)))
-
-    nx = len(xs) - 1
-    ny = len(ys) - 1
-
-    grid = [[0] * ny for _ in range(nx)]
-
-    x_index = {}
-    for i in range(len(xs)):
-        x_index[xs[i]] = i
-
-    y_index = {}
-    for i in range(len(ys)):
-        y_index[ys[i]] = i
-
-    for x1, y1, x2, y2 in rectangles:
-        i1 = x_index[x1]
-        i2 = x_index[x2]
-        j1 = y_index[y1]
-        j2 = y_index[y2]
-        for i in range(i1, i2):
-            row = grid[i]
-            for j in range(j1, j2):
-                row[j] += 1
-
-    return xs, ys, grid
-
-
-def query(prepared, x, y):
-    xs, ys, grid = prepared
-    i = bisect_right(xs, x) - 1
-    j = bisect_right(ys, y) - 1
-    if i < 0 or i >= len(xs) - 1 or j < 0 or j >= len(ys) - 1:
+def query(pr: tuple, x: int, y: int) -> int:
+    sx, sy, g = pr
+    if len(g) == 0:
         return 0
-    return grid[i][j]
+    i = bisect_right(sx, x) - 1
+    j = bisect_right(sy, y) - 1
+    # print(x, y, i, j)
+    if i < 0 or j < 0:
+        return 0
+    if i >= len(sx) - 1 or j >= len(sy) - 1:
+        return 0
+    return g[i][j]
