@@ -29,31 +29,31 @@ Tree algo: prep O(N log N), query O(log N), memory O(N log N). Uses a persistent
 
 ### Brute force
 
-| # | scenario | time | memory |
-|---|----------|------|--------|
-| 1 | N=2000 nested, M=2000 queries at center | biggest | lowest |
-| 2 | N=3000 random, M=3000 queries that miss all rects | big | lowest |
-| 3 | N=3000 nested, single query at center | lowest | lowest |
+| scenario | time | memory |
+|----------|------|--------|
+| N=2000 nested, M=2000 queries at center | biggest | lowest |
+| N=3000 random, M=3000 queries that miss all rects | big | lowest |
+| N=3000 nested, single query at center | lowest | lowest |
 
 Worst case is scenario 1 - lots of nested rectangles and every query hits almost all of them, so each query does maximum work. Memory is tiny in all cases since brute force stores nothing extra.
 
 ### Map algo
 
-| # | scenario | time | memory |
-|---|----------|------|--------|
-| 1 | N=200 nested | biggest | big |
-| 2 | N=200 distinct non-nested coords | middle | big |
-| 3 | N=150 nested, M=1000 hash queries | middle | middle |
+| scenario | time | memory |
+|----------|------|--------|
+| N=200 nested | biggest | big |
+| N=200 distinct non-nested coords | middle | big |
+| N=150 nested, M=1000 hash queries | middle | middle |
 
 Worst case is scenario 1 - nested rectangles make O(N^3) prep hurt the most because each outer rectangle covers nearly the whole grid. Memory is about the same for scenarios 1 and 2 since grid size depends on how many unique coordinates there are, not on nesting.
 
 ### Tree algo
 
-| # | scenario | time | memory |
-|---|----------|------|--------|
-| 1 | N=2000 distinct coords, M=2000 hash queries | big | big |
-| 2 | N=2000 same x-interval, M=2000 queries | lowest | lowest |
-| 3 | N=2000 nested, M=2000 hash queries | big | biggest |
+| scenario | time | memory |
+|----------|------|--------|
+| N=2000 distinct coords, M=2000 hash queries | big | big |
+| N=2000 same x-interval, M=2000 queries | lowest | lowest |
+| N=2000 nested, M=2000 hash queries | big | biggest |
 
 Worst case for memory is scenario 3 - nested rectangles cause the deepest path rewrites in the persistent tree, creating the most new nodes. Time is similar between scenarios 1 and 3 since both have many distinct x-events.
 
