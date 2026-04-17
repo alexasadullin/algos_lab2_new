@@ -8,14 +8,14 @@ from algos.map_algo import prepare as map_prepare, query as map_query
 from algos.tree_algo import prepare as tree_prepare, query as tree_query
 
 
-def measure_time(fn, *args) -> float:
+def measure_time(fn, *args):
     start = time.perf_counter()
     for _ in range(100):
         fn(*args)
     return (time.perf_counter() - start) / 100
 
 
-def measure_memory(fn, *args) -> int:
+def measure_memory(fn, *args):
     tracemalloc.start()
     fn(*args)
     _, peak = tracemalloc.get_traced_memory()
@@ -23,16 +23,29 @@ def measure_memory(fn, *args) -> int:
     return peak
 
 
-def gen_nested(N: int) -> list:
-    return [(10 * i, 10 * i, 10 * (2 * N - i), 10 * (2 * N - i)) for i in range(1, N + 1)]
+def gen_nested(N):
+    rects = []
+    for i in range(1, N + 1):
+        x1 = 10 * i
+        y1 = 10 * i
+        x2 = 10 * (2 * N - i)
+        y2 = 10 * (2 * N - i)
+        rects.append((x1, y1, x2, y2))
+    return rects
 
 
-def gen_points_hash(N: int, M: int) -> list:
-    p_x, p_y = 1000000007, 998244353
-    return [((p_x * i) % (20 * N), (p_y * i) % (20 * N)) for i in range(1, M + 1)]
+def gen_points_hash(N, M):
+    p_x = 1000000007
+    p_y = 998244353
+    points = []
+    for i in range(1, M + 1):
+        x = (p_x * i) % (20 * N)
+        y = (p_y * i) % (20 * N)
+        points.append((x, y))
+    return points
 
 
-def gen_random(N: int, seed: int = 42) -> list:
+def gen_random(N, seed=42):
     rng = random.Random(seed)
     rects = []
     for _ in range(N):
@@ -44,39 +57,49 @@ def gen_random(N: int, seed: int = 42) -> list:
     return rects
 
 
-def gen_distinct_coords(N: int, seed: int = 7) -> list:
+def gen_distinct_coords(N, seed=7):
     rng = random.Random(seed)
     xs = rng.sample(range(1, 10 ** 6), 2 * N)
     ys = rng.sample(range(1, 10 ** 6), 2 * N)
     rects = []
     for i in range(N):
-        x1, x2 = sorted((xs[2 * i], xs[2 * i + 1]))
-        y1, y2 = sorted((ys[2 * i], ys[2 * i + 1]))
-        rects.append((x1, y1, x2, y2))
+        a = xs[2 * i]
+        b = xs[2 * i + 1]
+        if a > b:
+            a, b = b, a
+        c = ys[2 * i]
+        d = ys[2 * i + 1]
+        if c > d:
+            c, d = d, c
+        rects.append((a, c, b, d))
     return rects
 
 
-def gen_same_x_range(N: int, seed: int = 11) -> list:
+def gen_same_x_range(N, seed=11):
     rng = random.Random(seed)
-    x1, x2 = 1, 10 ** 9
-    rects = []
+    x1 = 1
+    x2 = 10 ** 9
     ys = rng.sample(range(1, 10 ** 6), 2 * N)
+    rects = []
     for i in range(N):
-        y1, y2 = sorted((ys[2 * i], ys[2 * i + 1]))
-        rects.append((x1, y1, x2, y2))
+        a = ys[2 * i]
+        b = ys[2 * i + 1]
+        if a > b:
+            a, b = b, a
+        rects.append((x1, a, x2, b))
     return rects
 
 
-def identity(rectangles: list) -> list:
+def identity(rectangles):
     return rectangles
 
 
-def run_many_queries(query_fn, prepared, points: list) -> None:
+def run_many_queries(query_fn, prepared, points):
     for x, y in points:
         query_fn(prepared, x, y)
 
 
-def collect_scenario(prepare_fn, query_fn, rects: list, points: list) -> tuple:
+def collect_scenario(prepare_fn, query_fn, rects, points):
     prepared = prepare_fn(rects)
     prep_time = measure_time(prepare_fn, rects)
     prep_mem = measure_memory(prepare_fn, rects)
@@ -90,9 +113,11 @@ def collect_scenario(prepare_fn, query_fn, rects: list, points: list) -> tuple:
     return prep_time, query_time, prep_mem, query_mem
 
 
-def build_brute_scenarios() -> list:
-    N1, M1 = 2000, 2000
-    N2, M2 = 3000, 3000
+def build_brute_scenarios():
+    N1 = 2000
+    M1 = 2000
+    N2 = 3000
+    M2 = 3000
     N3 = 3000
     return [
         ("1. N=2000 nested, M=2000 at center", gen_nested(N1), [(10 * N1, 10 * N1)] * M1),
@@ -101,10 +126,11 @@ def build_brute_scenarios() -> list:
     ]
 
 
-def build_map_scenarios() -> list:
+def build_map_scenarios():
     N1 = 200
     N2 = 200
-    N3, M3 = 150, 1000
+    N3 = 150
+    M3 = 1000
     return [
         ("1. N=200 nested", gen_nested(N1), [(10 * N1, 10 * N1)]),
         ("2. N=200 distinct non-nested coords", gen_distinct_coords(N2, seed=23), [(500_000, 500_000)]),
@@ -112,9 +138,12 @@ def build_map_scenarios() -> list:
     ]
 
 
-def build_tree_scenarios() -> list:
-    N, M = 2000, 2000
-    s2_points = [(500_000_000, (i * 998244353) % 1_000_000) for i in range(M)]
+def build_tree_scenarios():
+    N = 2000
+    M = 2000
+    s2_points = []
+    for i in range(M):
+        s2_points.append((500_000_000, (i * 998244353) % 1_000_000))
     return [
         ("1. N=2000 distinct coords, M=2000 hash queries", gen_distinct_coords(N, seed=31), gen_points_hash(N, M)),
         ("2. N=2000 same x-interval, M=2000 queries", gen_same_x_range(N, seed=41), s2_points),
@@ -122,7 +151,7 @@ def build_tree_scenarios() -> list:
     ]
 
 
-def draw_chart(algo_name: str, results: list):
+def draw_chart(algo_name, results):
     fig, axes = plt.subplots(1, 3, figsize=(18, 5), gridspec_kw={"wspace": 0.9})
     for ax, (label, prep_time, query_time, prep_mem, query_mem) in zip(axes, results):
         ax2 = ax.twinx()
@@ -141,7 +170,7 @@ def draw_chart(algo_name: str, results: list):
     plt.close()
 
 
-def run_algo(name: str, prepare_fn, query_fn, scenarios: list):
+def run_algo(name, prepare_fn, query_fn, scenarios):
     print(f"\n=== {name} ===")
     results = []
     for label, rects, points in scenarios:
