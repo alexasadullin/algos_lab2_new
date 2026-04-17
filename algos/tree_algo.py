@@ -1,10 +1,7 @@
 from bisect import bisect_right
-from collections import defaultdict
 
 
 class Node:
-    __slots__ = ("left", "right", "value")
-
     def __init__(self, left, right, value):
         self.left = left
         self.right = right
@@ -38,28 +35,48 @@ def _point_query(node, lo, hi, p):
     return node.value + _point_query(node.right, mid, hi, p)
 
 
-def prepare(rectangles: list) -> tuple:
-    xs = sorted({r[0] for r in rectangles} | {r[2] for r in rectangles})
-    ys = sorted({r[1] for r in rectangles} | {r[3] for r in rectangles})
-    y_index = {v: i for i, v in enumerate(ys)}
+def prepare(rectangles):
+    x_values = []
+    y_values = []
+    for r in rectangles:
+        x_values.append(r[0])
+        x_values.append(r[2])
+        y_values.append(r[1])
+        y_values.append(r[3])
+
+    xs = sorted(list(set(x_values)))
+    ys = sorted(list(set(y_values)))
+
+    y_index = {}
+    for i in range(len(ys)):
+        y_index[ys[i]] = i
+
     ny = max(len(ys) - 1, 1)
-    events = defaultdict(list)
+
+    events = {}
     for x1, y1, x2, y2 in rectangles:
         j1 = y_index[y1]
         j2 = y_index[y2]
+        if x1 not in events:
+            events[x1] = []
         events[x1].append((j1, j2, 1))
+        if x2 not in events:
+            events[x2] = []
         events[x2].append((j1, j2, -1))
+
     roots = []
     current = None
     for x in xs:
-        for j1, j2, delta in events[x]:
-            if j1 < j2:
-                current = _update(current, 0, ny, j1, j2, delta)
+        if x in events:
+            for j1, j2, delta in events[x]:
+                if j1 < j2:
+                    current = _update(current, 0, ny, j1, j2, delta)
         roots.append(current)
+
     return xs, ys, ny, roots
 
 
-def query(prepared: tuple, x: int, y: int) -> int:
+def query(prepared, x, y):
     xs, ys, ny, roots = prepared
     i = bisect_right(xs, x) - 1
     if i < 0:
